@@ -647,6 +647,8 @@ define(["dojo/_base/kernel",
 			this.findCurrentIndexArea(coordinates, size);
 			if(this._currentIndexArea !== -1 && this._accept){
 				this.placeDropIndicator(coordinates, size);
+			} else if (this._currentIndexArea === -1){
+					this.placeDropIndicator(coordinates, size);
 			}
 		},
 	
@@ -664,12 +666,14 @@ define(["dojo/_base/kernel",
 			//keep old drop Index
 			this._oldDropIndex = this._currentDropIndex;
 			// calculate all children marker (see VerticalDropMode.initItems())
-			var area = this._areaList[this._currentIndexArea];
-			if(!area.initItems){
-				this._dropMode.initItems(area);
-			}
-			//get the index where the drop has to be placed.
-			this._currentDropIndex = this._dropMode.getDropIndex(area, coords);
+			if (this._currentIndexArea !== -1){
+				var area = this._areaList[this._currentIndexArea];
+				if(!area.initItems){
+					this._dropMode.initItems(area);
+				}
+				//get the index where the drop has to be placed.
+				this._currentDropIndex = this._dropMode.getDropIndex(area, coords);
+			} 
 			if(!(this._currentIndexArea === this._oldIndexArea && this._oldDropIndex === this._currentDropIndex)){
 				this._placeDropIndicator(size);
 			}
@@ -678,14 +682,27 @@ define(["dojo/_base/kernel",
 	
 		_placeDropIndicator: function(/*Object*/size){
 			// summary:
-			//		place the dropIndicator
+			//		place the dropIndicator. If _currentIndexArea == -1, the 
+			//		drop indicator will be returned to the start drag area.
 			// size:
 			//		an object encapsulating width and height values
 			// tags:
 			//		protected
-	
-			var oldArea = this._areaList[this._lastValidIndexArea];
-			var currentArea = this._areaList[this._currentIndexArea];
+			
+			var oldArea = this._areaList[this._lastValidIndexArea],
+				currentArea;
+
+			if (this._currentIndexArea === -1){
+				var sourceAnchor = dom.byId('dndSourceAnchor')
+				this._currentIndexArea = this._getIndexArea(sourceAnchor.parentNode);
+				currentArea = this._areaList[this._currentIndexArea]
+				this._currentDropIndex = this._sourceDropIndex != currentArea.items.length ?
+									this._sourceDropIndex :-1;
+				size = this._dragItem.item.size;
+			} else {
+				currentArea = this._areaList[this._currentIndexArea];
+			}
+
 			//refresh the previous area after moving out the drop indicator
 			this._dropMode.refreshItems(oldArea, this._oldDropIndex, size, false);
 			// place dropIndicator
@@ -717,14 +734,15 @@ define(["dojo/_base/kernel",
 				var stickyDropArea = (index > -1) && domClass.contains(parentNode,"stickyDropArea");
 				if(stickyDropArea && index != -1){
 					this._currentIndexArea = index;
-				} else {
-					var sourceAnchor = dom.byId('dndSourceAnchor')
-					this._currentIndexArea = this._getIndexArea(sourceAnchor.parentNode);
-					var currentArea = this._areaList[this._currentIndexArea]
-//					if (this._sourceDropIndex != currentArea.items.length)
-					this._currentDropIndex = this._sourceDropIndex != currentArea.items.length ?
-										this._sourceDropIndex :-1;
-					var size = this._dragItem.item.size;
+ 				} else {
+// 					var sourceAnchor = dom.byId('dndSourceAnchor')
+// 					this._currentIndexArea = this._getIndexArea(sourceAnchor.parentNode);
+// 					var currentArea = this._areaList[this._currentIndexArea]
+// //					if (this._sourceDropIndex != currentArea.items.length)
+// 					this._currentDropIndex = this._sourceDropIndex != currentArea.items.length ?
+// 										this._sourceDropIndex :-1;
+ 					var size = this._dragItem.item.size;
+					this._currentIndexArea = -1;
 					this._placeDropIndicator(size);
 				}
 //				else{
@@ -765,7 +783,7 @@ define(["dojo/_base/kernel",
 			var geo = geom.position(node,true),
 				cancel = false;
 
-			if (!this._accept || !this._dropMode.canDropHere(this._areaList,this._currentIndexArea,geo.x,geo.y)){
+			if (!this._accept){ // || !this._dropMode.canDropHere(this._areaList,this._currentIndexArea,geo.x,geo.y)){
 				this.onDropCancel();
 				cancel = true;
 			}

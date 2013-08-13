@@ -121,8 +121,9 @@ define([
 			if(d > this.dragDistance * this.dragDistance){
 				this._isDragging = true;
 				connect.disconnect(this.events.pop());
-				if (!/(^|\s)\s*width\s*:/.test(this.node.style.cssText))
-					domStyle.set(this.node, "width", geom.getContentBox(this.node).w + "px");
+// for now, require that elements handle their own width.
+//				if (!/(^|\s)\s*width\s*:/.test(this.node.style.cssText))
+//					domStyle.set(this.node, "width", geom.getContentBox(this.node).w + "px");
 				this.initOffsetDrag(e);
 				this.events.push(connect.connect(this.d, "onmousemove", this, "onMove"));
 			}
